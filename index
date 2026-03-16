@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Météo Station</title>
+<style>
+:root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--brd:#30363d;--txt:#e6edf3;--mut:#7d8590;--blue:#58a6ff;--teal:#3fb950;--amb:#d29922;--red:#f85149;--r:12px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:system-ui,sans-serif;font-size:14px}
+#app{display:flex;flex-direction:column;height:100vh}
+header{background:var(--bg2);border-bottom:1px solid var(--brd);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.hl{display:flex;align-items:center;gap:8px}
+h1{font-size:16px;font-weight:600}
+#dot{width:8px;height:8px;border-radius:50%;background:var(--mut);transition:background .3s}
+#dot.on{background:var(--teal)}
+#lastUp{font-size:11px;color:var(--mut)}
+#content{flex:1;overflow-y:auto;padding:12px;padding-bottom:68px}
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--brd);display:flex;z-index:20}
+nav button{flex:1;background:none;border:none;color:var(--mut);padding:8px 0 6px;font-size:10px;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color .2s}
+nav button.active{color:var(--blue)}
+nav button svg{width:18px;height:18px;stroke-width:1.8}
+.page{display:none}.page.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r);padding:12px;margin-bottom:10px}
+.lbl{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--mut);margin-bottom:4px}
+.big{font-size:36px;font-weight:300;letter-spacing:-1.5px;line-height:1}
+.unit{font-size:14px;color:var(--mut)}
+.sub{font-size:11px;color:var(--mut);margin-top:4px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.g2 .card{margin:0}.g2 .big{font-size:24px}
+.bbar{height:6px;background:var(--bg3);border-radius:3px;margin-top:6px;overflow:hidden}
+.bfill{height:100%;border-radius:3px;background:var(--teal);transition:width .5s}
+.bfill.w{background:var(--amb)}.bfill.c{background:var(--red)}
+.ccard{background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r);padding:12px;margin-bottom:10px}
+.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.ct{font-size:12px;font-weight:500}
+.rb{display:flex;gap:3px}
+.rb button{background:none;border:1px solid var(--brd);border-radius:5px;color:var(--mut);font-size:10px;padding:2px 6px;cursor:pointer;font-family:inherit}
+.rb button.active{background:var(--blue);border-color:var(--blue);color:#fff}
+canvas{display:block;width:100%!important}
+.bbtn{width:100%;background:var(--blue);color:#fff;border:none;border-radius:var(--r);padding:12px;font-size:14px;font-family:inherit;font-weight:500;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity .2s}
+.bbtn:disabled{opacity:.35;cursor:not-allowed}
+.bbtn.red{background:var(--red)}.bbtn.ghost{background:var(--bg3);color:var(--txt);border:1px solid var(--brd)}
+.bst{background:var(--bg3);border:1px solid var(--brd);border-radius:10px;padding:9px 12px;margin-bottom:10px;font-size:12px;color:var(--mut);display:flex;align-items:center;gap:7px}
+.log{background:var(--bg);border:1px solid var(--brd);border-radius:8px;padding:7px;font-size:10px;font-family:monospace;color:var(--mut);height:90px;overflow-y:auto;margin-bottom:10px}
+.log .ok{color:var(--teal)}.log .er{color:var(--red)}.log .nf{color:var(--blue)}
+.sr{display:flex;gap:6px;margin-bottom:10px}
+.chip{flex:1;background:var(--bg2);border:1px solid var(--brd);border-radius:10px;padding:7px;text-align:center}
+.chip .cv{font-size:16px;font-weight:500}.chip .cl{font-size:9px;color:var(--mut);margin-top:1px;text-transform:uppercase;letter-spacing:.4px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{text-align:left;color:var(--mut);font-weight:500;padding:5px 5px;border-bottom:1px solid var(--brd);font-size:10px;text-transform:uppercase}
+td{padding:6px 5px;border-bottom:1px solid var(--brd);color:var(--txt)}
+tr:last-child td{border-bottom:none}
+.tv{color:var(--blue);font-weight:500}.hv{color:var(--teal)}
+.ebtn{width:100%;background:var(--bg3);color:var(--txt);border:1px solid var(--brd);border-radius:var(--r);padding:10px 12px;font-size:12px;font-family:inherit;cursor:pointer;margin-bottom:8px;text-align:left;display:flex;align-items:center;gap:8px}
+.ir{display:flex;justify-content:space-between;margin-bottom:6px}
+.ir span:first-child{font-size:12px;color:var(--mut)}.ir span:last-child{font-size:12px;font-weight:500}
+.sec{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--mut);margin:12px 0 6px}
+.empty{text-align:center;padding:36px 16px;color:var(--mut);font-size:13px}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <div class="hl"><div id="dot"></div><h1>Météo Station</h1></div>
+  <span id="lastUp">—</span>
+</header>
+<div id="content">
+
+  <!-- DASH -->
+  <div class="page active" id="p-dash">
+    <div class="card" style="margin-top:2px">
+      <div class="lbl">Température</div>
+      <div class="big" id="d-t" style="color:var(--blue)">--<span class="unit"> °C</span></div>
+      <div class="sub" id="d-tmm">Min / Max : — / —</div>
+    </div>
+    <div class="g2">
+      <div class="card"><div class="lbl">Humidité</div><div class="big" id="d-h" style="color:var(--teal)">--<span class="unit" style="font-size:11px"> %</span></div></div>
+      <div class="card"><div class="lbl">Batterie</div><div class="big" id="d-b" style="color:var(--amb)">--<span class="unit" style="font-size:11px"> %</span></div><div class="bbar"><div class="bfill" id="bb" style="width:0%"></div></div></div>
+    </div>
+    <div class="ccard">
+      <div class="ch"><span class="ct">Température</span>
+        <div class="rb">
+          <button class="active" onclick="setRange('6h',this)">6h</button>
+          <button onclick="setRange('12h',this)">12h</button>
+          <button onclick="setRange('24h',this)">24h</button>
+          <button onclick="setRange('all',this)">Tout</button>
+        </div>
+      </div>
+      <canvas id="cT" height="140"></canvas>
+    </div>
+    <div class="ccard">
+      <div class="ch"><span class="ct">Humidité</span></div>
+      <canvas id="cH" height="80"></canvas>
+    </div>
+  </div>
+
+  <!-- BT -->
+  <div class="page" id="p-bt">
+    <div style="height:8px"></div>
+    <div class="bst" id="btStatus"><span id="btStatusTxt">Non connecté</span></div>
+    <button class="bbtn" id="bConn" onclick="appBtConnect()">Connecter ESP32-Meteo</button>
+    <button class="bbtn ghost" id="bDisc" onclick="appBtDisconnect()" disabled>Déconnecter</button>
+    <div class="sec">Données</div>
+    <button class="bbtn" id="bStat" onclick="appSend('STATUS')" disabled>Actualiser la mesure</button>
+    <button class="bbtn" id="bCSV"  onclick="appSend('CSV')"    disabled>Importer historique complet</button>
+    <button class="bbtn" id="b24"   onclick="appSend('LAST24')" disabled>Importer 24 dernières heures</button>
+    <div class="sec">Journal</div>
+    <div class="log" id="logBox"></div>
+  </div>
+
+  <!-- HIST -->
+  <div class="page" id="p-hist">
+    <div class="sr" id="sRow" style="display:none">
+      <div class="chip"><div class="cv" id="s-n">0</div><div class="cl">Mesures</div></div>
+      <div class="chip"><div class="cv" id="s-mn" style="color:var(--blue)">—</div><div class="cl">T° Min</div></div>
+      <div class="chip"><div class="cv" id="s-mx" style="color:var(--red)">—</div><div class="cl">T° Max</div></div>
+      <div class="chip"><div class="cv" id="s-hm" style="color:var(--teal)">—</div><div class="cl">Hum moy</div></div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="empty" id="hEmpty"><div>Aucune donnée</div><div style="font-size:11px;margin-top:4px">Importe l'historique via Bluetooth</div></div>
+      <div style="overflow-x:auto;display:none" id="hWrap">
+        <table><thead><tr><th>Date / Heure</th><th>T° (°C)</th><th>Hum (%)</th><th>Bat (V)</th></tr></thead><tbody id="hBody"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPORT -->
+  <div class="page" id="p-exp">
+    <div class="sec">Télécharger</div>
+    <button class="ebtn" onclick="dlCSV()">Exporter en CSV</button>
+    <button class="ebtn" onclick="dlJSON()">Exporter en JSON</button>
+    <div class="sec">Résumé</div>
+    <div class="card">
+      <div class="ir"><span>Mesures</span><span id="ex-n">0</span></div>
+      <div class="ir"><span>Première</span><span id="ex-f">—</span></div>
+      <div class="ir" style="margin:0"><span>Dernière</span><span id="ex-l">—</span></div>
+    </div>
+    <div class="sec" style="color:var(--red)">Zone danger</div>
+    <button class="ebtn" onclick="clearAll()" style="border-color:var(--red)">Effacer toutes les données</button>
+  </div>
+
+</div>
+<nav>
+  <button class="active" id="nb-dash" onclick="go('dash',this)">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Tableau
+  </button>
+  <button id="nb-bt" onclick="go('bt',this)">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"/></svg>
+    Bluetooth
+  </button>
+  <button id="nb-hist" onclick="go('hist',this)">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M3 3v18h18"/><polyline points="7 16 11 12 15 14 21 8"/></svg>
+    Historique
+  </button>
+  <button id="nb-exp" onclick="go('exp',this)">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Export
+  </button>
+</nav>
+</div>
+
+<script>
+// ── État ──
+var records = [];
+var range = '6h';
+var btBuf = '';
+
+// Chargement localStorage — avec try/catch robuste
+try {
+  var s = localStorage.getItem('meteo');
+  if (s) records = JSON.parse(s);
+} catch(e) { records = []; }
+
+// ══════════════════════════════════════════
+//  FONCTIONS APPELÉES PAR APP INVENTOR
+//  Toutes protégées par try/catch
+// ══════════════════════════════════════════
+
+window.AppInventorStringChanged = function(text) {
+  try {
+    if (!text || text.length === 0) return;
+    if (text.indexOf('connect') === 0 || text.indexOf('send:') === 0) return;
+    btBuf += text;
+    var lines = btBuf.split('\n');
+    btBuf = lines.pop() || '';
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i].replace('\r', '').trim();
+      if (l.length > 0) parseLine(l);
+    }
+  } catch(e) {}
+};
+window.receiveData = window.AppInventorStringChanged;
+
+window.setConnected = function(isConn, deviceName) {
+  try {
+    var dot = document.getElementById('dot');
+    var txt = document.getElementById('btStatusTxt');
+    var bst = document.getElementById('btStatus');
+    if (dot) dot.className = isConn ? 'on' : '';
+    if (txt) txt.textContent = isConn ? ('Connecté : ' + (deviceName || 'ESP32-Meteo')) : 'Déconnecté';
+    if (bst) bst.style.borderColor = isConn ? 'var(--teal)' : 'var(--brd)';
+    setBtBtns(isConn);
+    addLog(isConn ? ('Connecté à ' + (deviceName || '?')) : 'Déconnecté', isConn ? 'ok' : 'er');
+    var lu = document.getElementById('lastUp');
+    if (lu && isConn) lu.textContent = hhmm();
+  } catch(e) {}
+};
+
+window.btError = function(msg) {
+  try {
+    addLog('Erreur : ' + (msg || '?'), 'er');
+    var dot = document.getElementById('dot');
+    if (dot) dot.className = '';
+  } catch(e) {}
+};
+
+// ══════════════════════════════════════════
+//  APPELS VERS APP INVENTOR
+// ══════════════════════════════════════════
+
+function callApp(msg) {
+  try { window.AppInventor.setWebViewString(msg); }
+  catch(e) { addLog('[PC] ' + msg, 'nf'); }
+}
+
+function appBtConnect()    { callApp('connect'); }
+function appBtDisconnect() { callApp('disconnect'); }
+function appSend(cmd) {
+  callApp('send:' + cmd.toLowerCase());
+  addLog('-> ' + cmd, 'nf');
+}
+
+// ══════════════════════════════════════════
+//  PARSING DONNÉES ESP32
+// ══════════════════════════════════════════
+
+function parseLine(line) {
+  try {
+    // Ligne CSV : timestamp,YYYY-MM-DD HH:MM,temp,hum,batV
+    var m = line.match(/^(\d+),([\d-]+ [\d:]+),([\d.]+),([\d.]+),([\d.]+)$/);
+    if (m) {
+      var r = {
+        timestamp: parseInt(m[1]),
+        dateStr: m[2],
+        temp: parseFloat(m[3]),
+        hum: parseFloat(m[4]),
+        battV: parseFloat(m[5])
+      };
+      var exists = false;
+      for (var i = 0; i < records.length; i++) {
+        if (records[i].timestamp === r.timestamp) { exists = true; break; }
+      }
+      if (!exists) {
+        records.push(r);
+        records.sort(function(a,b){ return a.timestamp - b.timestamp; });
+        saveRecords();
+      }
+      return;
+    }
+    // Ligne STATUS
+    var t = line.match(/Temp[^\d]*([\d.]+)/);
+    if (t) updT(parseFloat(t[1]));
+    var h = line.match(/Humidite[^\d]*([\d.]+)/);
+    if (h) updH(parseFloat(h[1]));
+    var b = line.match(/([\d.]+) V.*\((\d+)/);
+    if (b) updB(parseFloat(b[1]), parseInt(b[2]));
+    // Fin export
+    if (line.indexOf('=== FIN') === 0) {
+      addLog(line, 'ok');
+      refreshAll();
+      var lu = document.getElementById('lastUp');
+      if (lu) lu.textContent = hhmm();
+    } else if (line.indexOf('===') === 0) {
+      addLog(line, 'nf');
+    }
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════
+
+function updT(v) {
+  try { document.getElementById('d-t').innerHTML = v.toFixed(1) + '<span class="unit"> °C</span>'; } catch(e) {}
+}
+function updH(v) {
+  try { document.getElementById('d-h').innerHTML = v.toFixed(0) + '<span class="unit" style="font-size:11px"> %</span>'; } catch(e) {}
+}
+function updB(v, pct) {
+  try {
+    document.getElementById('d-b').innerHTML = pct + '<span class="unit" style="font-size:11px"> %</span>';
+    var b = document.getElementById('bb');
+    b.style.width = pct + '%';
+    b.className = 'bfill' + (pct < 20 ? ' c' : pct < 40 ? ' w' : '');
+  } catch(e) {}
+}
+
+function refreshDash() {
+  try {
+    if (!records.length) return;
+    var last = records[records.length - 1];
+    updT(last.temp);
+    updH(last.hum);
+    var pct = Math.max(0, Math.min(100, Math.round((last.battV - 3.3) / (4.2 - 3.3) * 100)));
+    updB(last.battV, pct);
+    var f = filterRange(records, range);
+    if (f.length) {
+      var temps = f.map(function(r){ return r.temp; });
+      var mn = Math.min.apply(null, temps).toFixed(1);
+      var mx = Math.max.apply(null, temps).toFixed(1);
+      document.getElementById('d-tmm').textContent = 'Min / Max (' + range + ') : ' + mn + '°C / ' + mx + '°C';
+    }
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════
+//  GRAPHIQUES — Canvas 2D sans librairie externe
+// ══════════════════════════════════════════
+
+function filterRange(data, r) {
+  if (r === 'all' || !data.length) return data;
+  var h = r === '6h' ? 6 : r === '12h' ? 12 : 24;
+  var cut = data[data.length - 1].timestamp - h * 3600;
+  return data.filter(function(x){ return x.timestamp >= cut; });
+}
+
+function setRange(r, btn) {
+  range = r;
+  var btns = document.querySelectorAll('.rb button');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+  btn.classList.add('active');
+  drawCharts();
+}
+
+function drawChart(canvasId, data, color, unit, decimals) {
+  try {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var W = canvas.offsetWidth;
+    var H = canvas.height;
+    canvas.width = W;
+    ctx.clearRect(0, 0, W, H);
+    if (!data || data.length < 2) {
+      ctx.fillStyle = '#7d8590';
+      ctx.font = '11px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('Pas encore de données', W/2, H/2);
+      return;
+    }
+    var mn = Math.min.apply(null, data);
+    var mx = Math.max.apply(null, data);
+    if (mx - mn < 0.5) { mn -= 0.5; mx += 0.5; }
+    var pad = { t: 8, b: 20, l: 28, r: 8 };
+    var cw = W - pad.l - pad.r;
+    var ch = H - pad.t - pad.b;
+
+    // Grille
+    ctx.strokeStyle = '#21262d';
+    ctx.lineWidth = 1;
+    for (var g = 0; g <= 4; g++) {
+      var gy = pad.t + (ch / 4) * g;
+      ctx.beginPath(); ctx.moveTo(pad.l, gy); ctx.lineTo(W - pad.r, gy); ctx.stroke();
+      var val = mx - (mx - mn) * g / 4;
+      ctx.fillStyle = '#7d8590';
+      ctx.font = '9px system-ui';
+      ctx.textAlign = 'right';
+      ctx.fillText(val.toFixed(decimals), pad.l - 2, gy + 3);
+    }
+
+    // Aire
+    ctx.beginPath();
+    for (var i = 0; i < data.length; i++) {
+      var x = pad.l + (i / (data.length - 1)) * cw;
+      var y = pad.t + ch - ((data[i] - mn) / (mx - mn)) * ch;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Remplissage
+    ctx.lineTo(pad.l + cw, pad.t + ch);
+    ctx.lineTo(pad.l, pad.t + ch);
+    ctx.closePath();
+    ctx.fillStyle = color.replace(')', ', 0.08)').replace('rgb', 'rgba');
+    ctx.fill();
+
+    // Labels X
+    ctx.fillStyle = '#7d8590';
+    ctx.font = '9px system-ui';
+    ctx.textAlign = 'center';
+    var step = Math.max(1, Math.floor(data.length / 5));
+
+  } catch(e) {}
+}
+
+function drawCharts() {
+  try {
+    var data = filterRange(records, range);
+    var temps = data.map(function(r){ return r.temp; });
+    var hums  = data.map(function(r){ return r.hum; });
+    drawChart('cT', temps, '#58a6ff', '°C', 1);
+    drawChart('cH', hums,  '#3fb950', '%',  0);
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════
+//  HISTORIQUE
+// ══════════════════════════════════════════
+
+function refreshHist() {
+  try {
+    if (!records.length) {
+      document.getElementById('hEmpty').style.display = '';
+      document.getElementById('hWrap').style.display = 'none';
+      document.getElementById('sRow').style.display = 'none';
+      return;
+    }
+    document.getElementById('hEmpty').style.display = 'none';
+    document.getElementById('hWrap').style.display = '';
+    document.getElementById('sRow').style.display = 'flex';
+    var ts = records.map(function(r){ return r.temp; });
+    var hs = records.map(function(r){ return r.hum; });
+    document.getElementById('s-n').textContent  = records.length;
+    document.getElementById('s-mn').textContent = Math.min.apply(null, ts).toFixed(1) + '°';
+    document.getElementById('s-mx').textContent = Math.max.apply(null, ts).toFixed(1) + '°';
+    document.getElementById('s-hm').textContent = Math.round(hs.reduce(function(a,b){return a+b;},0)/hs.length) + '%';
+    var rows = records.slice(-200).reverse();
+    var html = '';
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      html += '<tr><td style="color:var(--mut);font-size:10px">' + r.dateStr + '</td>'
+            + '<td class="tv">' + r.temp.toFixed(1) + '</td>'
+            + '<td class="hv">' + r.hum.toFixed(0) + '</td>'
+            + '<td style="color:var(--mut)">' + r.battV.toFixed(2) + '</td></tr>';
+    }
+    document.getElementById('hBody').innerHTML = html;
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════
+//  EXPORT
+// ══════════════════════════════════════════
+
+function refreshExp() {
+  try {
+    document.getElementById('ex-n').textContent = records.length;
+    document.getElementById('ex-f').textContent = records.length ? records[0].dateStr : '—';
+    document.getElementById('ex-l').textContent = records.length ? records[records.length-1].dateStr : '—';
+  } catch(e) {}
+}
+
+function dlCSV() {
+  try {
+    if (!records.length) { alert('Aucune donnée'); return; }
+    var h = 'timestamp,date_heure,temperature_C,humidite_pct,batterie_V\n';
+    var rows = records.map(function(r){
+      return r.timestamp+','+r.dateStr+','+r.temp.toFixed(2)+','+r.hum.toFixed(1)+','+r.battV.toFixed(2);
+    });
+    dl('meteo_export.csv', h + rows.join('\n'), 'text/csv');
+  } catch(e) { alert('Erreur export'); }
+}
+
+function dlJSON() {
+  try {
+    if (!records.length) { alert('Aucune donnée'); return; }
+    dl('meteo_export.json', JSON.stringify(records, null, 2), 'application/json');
+  } catch(e) { alert('Erreur export'); }
+}
+
+function dl(name, content, mime) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], {type: mime}));
+  a.download = name;
+  a.click();
+}
+
+function clearAll() {
+  if (!confirm('Effacer toutes les données ?')) return;
+  records = [];
+  saveRecords();
+  refreshAll();
+}
+
+// ══════════════════════════════════════════
+//  UTILITAIRES
+// ══════════════════════════════════════════
+
+function refreshAll() {
+  try { refreshDash(); } catch(e) {}
+  try { drawCharts(); } catch(e) {}
+  try { refreshHist(); } catch(e) {}
+  try { refreshExp(); } catch(e) {}
+}
+
+function saveRecords() {
+  try { localStorage.setItem('meteo', JSON.stringify(records)); } catch(e) {}
+}
+
+function hhmm() {
+  try { return new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+  catch(e) { return '--:--'; }
+}
+
+function addLog(m, t) {
+  try {
+    var b = document.getElementById('logBox');
+    if (!b) return;
+    var d = document.createElement('div');
+    d.className = t || '';
+    d.textContent = '[' + hhmm() + '] ' + m;
+    b.appendChild(d);
+    b.scrollTop = b.scrollHeight;
+    // Limiter à 50 lignes
+    while (b.children.length > 50) b.removeChild(b.firstChild);
+  } catch(e) {}
+}
+
+function setBtBtns(on) {
+  try {
+    ['bStat','bCSV','b24','bDisc'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.disabled = !on;
+    });
+    var bc = document.getElementById('bConn');
+    if (bc) bc.disabled = on;
+  } catch(e) {}
+}
+
+function go(id, btn) {
+  try {
+    var pages = document.querySelectorAll('.page');
+    for (var i = 0; i < pages.length; i++) pages[i].classList.remove('active');
+    var navBtns = document.querySelectorAll('nav button');
+    for (var j = 0; j < navBtns.length; j++) navBtns[j].classList.remove('active');
+    var p = document.getElementById('p-' + id);
+    if (p) p.classList.add('active');
+    btn.classList.add('active');
+    if (id === 'dash') { refreshDash(); drawCharts(); }
+    if (id === 'hist') refreshHist();
+    if (id === 'exp')  refreshExp();
+  } catch(e) {}
+}
+
+// Init au démarrage
+try { refreshAll(); } catch(e) {}
+</script>
+</body>
+</html>
